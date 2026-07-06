@@ -2104,6 +2104,63 @@ display(df_metricas)
 print(df_metricas.to_string(index=False))
 
 
+# ## 5.3.1 Random Forest — Dirección circular (sin/cos)
+#
+# Enfoque alternativo para vec_direction: entrenar sin/cos y reconstruir con arctan2.
+# Ver circular_direction.py y rf_direction_circular_test.py para la comparación completa.
+
+from circular_direction import (
+    direction_to_sincos,
+    metricas_circulares,
+    sincos_to_direction,
+)
+
+# --- ANTES: métricas lineales sobre predicción directa en radianes (ya calculado arriba) ---
+m_dir_antes = metricas_regresion_robustas(y_test_dir, y_pred_dir, umbral_mape=0.5)
+m_dir_antes.update(metricas_circulares(y_test_dir, y_pred_dir))
+
+# --- DESPUÉS: entrenar RF sobre sin/cos ---
+y_train_dir_sincos = direction_to_sincos(y_train_dir)
+
+pipe_dir_sincos = Pipeline([
+    ("scaler", StandardScaler()),
+    ("rfr", RandomForestRegressor(random_state=42)),
+])
+multi_pipe_dir_sincos = MultiOutputRegressor(pipe_dir_sincos)
+
+param_grid_dir_sincos = {
+    "estimator__rfr__n_estimators": [50, 100, 200],
+    "estimator__rfr__max_depth": [None, 5, 10],
+    "estimator__rfr__min_samples_leaf": [1, 2],
+}
+
+grid_dir_sincos = GridSearchCV(
+    multi_pipe_dir_sincos,
+    param_grid_dir_sincos,
+    cv=GroupKFold(n_splits=7),
+    scoring="neg_mean_squared_error",
+    n_jobs=2,
+)
+grid_dir_sincos.fit(X_train_dir_flat, y_train_dir_sincos, groups=grupos_train)
+model_d_rf_sincos = grid_dir_sincos.best_estimator_
+
+y_pred_dir_sincos = model_d_rf_sincos.predict(X_test_dir_flat)
+y_pred_dir_circular = sincos_to_direction(y_pred_dir_sincos)
+
+m_dir_despues = metricas_regresion_robustas(y_test_dir, y_pred_dir_circular, umbral_mape=0.5)
+m_dir_despues.update(metricas_circulares(y_test_dir, y_pred_dir_circular))
+
+df_comp_dir_rf = pd.DataFrame([
+    {"Enfoque": "Antes (rad directo)", **m_dir_antes},
+    {"Enfoque": "Después (sin/cos)", **m_dir_despues},
+])
+print("\n=== RF Dirección: comparación antes vs sin/cos ===")
+display(df_comp_dir_rf)
+print(df_comp_dir_rf.to_string(index=False))
+
+joblib.dump(model_d_rf_sincos, "rfr_multioutput_secuential_dir_sincos.pkl")
+
+
 # # 5.4 Modelo XGBoost
 
 # In[ ]:

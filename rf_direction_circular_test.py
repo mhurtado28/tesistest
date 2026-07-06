@@ -17,6 +17,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.compose import TransformedTargetRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.multioutput import MultiOutputRegressor
@@ -122,8 +123,8 @@ def split_by_storm(X, y, grupos, test_frac=0.10):
     )
 
 
-def build_rf_model():
-    """RF fijo para la prueba rápida; en producción usar GridSearchCV del pipeline principal."""
+def build_rf_model(estimar_target: bool = False):
+    """RF con StandardScaler en X; opcionalmente también estandariza y (vec_direction)."""
     pipe = Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -139,12 +140,17 @@ def build_rf_model():
             ),
         ]
     )
+    if estimar_target:
+        pipe = TransformedTargetRegressor(
+            regressor=pipe,
+            transformer=StandardScaler(),
+        )
     return MultiOutputRegressor(pipe)
 
 
 def entrenar_rf_direccion_directa(X_train, y_train, grupos_train):
-    """Enfoque ANTES: predice ángulos en radianes directamente (como el pipeline actual)."""
-    model = build_rf_model()
+    """Enfoque ANTES: vec_direction estandarizado con StandardScaler y predicho directamente."""
+    model = build_rf_model(estimar_target=True)
     model.fit(X_train, y_train)
     return model
 
@@ -152,7 +158,7 @@ def entrenar_rf_direccion_directa(X_train, y_train, grupos_train):
 def entrenar_rf_direccion_sincos(X_train, y_train, grupos_train):
     """Enfoque DESPUÉS: predice sin/cos con MultiOutputRegressor (2 outputs por horizonte)."""
     y_sincos = direction_to_sincos(y_train)
-    model = build_rf_model()
+    model = build_rf_model(estimar_target=False)
     model.fit(X_train, y_sincos)
     return model
 
@@ -200,7 +206,10 @@ def tabla_comparativa(metricas_antes: dict, metricas_despues: dict) -> pd.DataFr
         "RMSE_circular_deg",
         "MAE_circular_deg",
     ]
-    for nombre, m in [("Antes (rad directo)", metricas_antes), ("Después (sin/cos)", metricas_despues)]:
+    for nombre, m in [
+        ("Antes (vec_direction estandarizado)", metricas_antes),
+        ("Después (sin/cos + arctan2)", metricas_despues),
+    ]:
         fila = {"Enfoque": nombre}
         for col in columnas:
             fila[col] = m.get(col, np.nan)
@@ -227,12 +236,8 @@ def main():
 
     demostrar_error_angular()
 
-    datos = cargar_datos_pipeline()
-    if datos is None:
-        print("\nDatos reales no disponibles → usando secuencias sintéticas.")
-        X_dir, y_dir, grupos = create_sequences_synthetic()
-    else:
-        X_dir, y_dir, grupos = datos
+    print("\nDatos: mismas secuencias sintéticas (random_state=42) para ambos enfoques.")
+    X_dir, y_dir, grupos = create_sequences_synthetic(random_state=42)
 
     X_train, y_train, g_train, X_test, y_test, _ = split_by_storm(
         flatten_sequences(X_dir), y_dir, grupos
@@ -240,7 +245,7 @@ def main():
     print(f"\nTrain: {X_train.shape[0]} secuencias | Test: {X_test.shape[0]} secuencias")
     print(f"Horizonte: {y_train.shape[1]} pasos | Features aplanadas: {X_train.shape[1]}")
 
-    print("\n[1/2] Entrenando RF — enfoque ANTES (dirección en radianes directa)...")
+    print("\n[1/2] Entrenando RF — ANTES (vec_direction estandarizado, predicción directa)...")
     model_directo = entrenar_rf_direccion_directa(X_train, y_train, g_train)
     y_pred_directo = model_directo.predict(X_test)
     metricas_antes = evaluar_enfoque_directo(y_test, y_pred_directo)

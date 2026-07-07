@@ -48,7 +48,7 @@ def plot_secuencias_horizonte(
         yd = _unwrap_angles(y_pred_despues[idx])
 
         ax.plot(pasos, np.degrees(yt), "k-o", linewidth=2, markersize=5, label="Real (vec_direction)")
-        ax.plot(pasos, np.degrees(ya), "s--", color="#E74C3C", linewidth=1.8, markersize=4, label="Antes (estandarizado)")
+        ax.plot(pasos, np.degrees(ya), "s--", color="#E74C3C", linewidth=1.8, markersize=4, label="Antes (directo)")
         ax.plot(pasos, np.degrees(yd), "^--", color="#2ECC71", linewidth=1.8, markersize=4, label="Después (sin/cos)")
 
         err_a = np.degrees(np.abs(error_angular(y_true[idx], y_pred_antes[idx])))
@@ -85,7 +85,7 @@ def plot_scatter_real_vs_pred(
     for ax, yp, titulo, color in zip(
         axes,
         [ya, yd],
-        ["Antes (vec_direction estandarizado)", "Después (sin/cos + arctan2)"],
+        ["Antes (vec_direction directo)", "Después (sin/cos + arctan2)"],
         ["#E74C3C", "#2ECC71"],
     ):
         ax.scatter(np.degrees(yt), np.degrees(yp), alpha=0.35, s=18, c=color, edgecolors="none")
@@ -212,19 +212,85 @@ def plot_panel_resumen(
     plt.close(fig)
 
 
+def plot_metricas_comparativas(
+    metricas_antes: dict,
+    metricas_despues: dict,
+    out_path: Path,
+):
+    """Gráfico de barras comparando métricas clave entre ambos enfoques."""
+    metricas_plot = [
+        ("R²", "R2", "lineal"),
+        ("RMSE (rad)", "RMSE", "lineal"),
+        ("MAE (rad)", "MAE", "lineal"),
+        ("sMAPE (%)", "sMAPE_%", "lineal"),
+        ("RMSE circ. (°)", "RMSE_circular_deg", "circular"),
+        ("MAE circ. (°)", "MAE_circular_deg", "circular"),
+    ]
+    labels = [m[0] for m in metricas_plot]
+    vals_antes = [metricas_antes[m[1]] for m in metricas_plot]
+    vals_despues = [metricas_despues[m[1]] for m in metricas_plot]
+
+    x = np.arange(len(labels))
+    w = 0.35
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bars1 = ax.bar(x - w / 2, vals_antes, w, label="Antes (vec_direction directo)", color="#E74C3C", alpha=0.85)
+    bars2 = ax.bar(x + w / 2, vals_despues, w, label="Después (sin/cos + arctan2)", color="#2ECC71", alpha=0.85)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=20, ha="right")
+    ax.set_title("Comparación de métricas — Random Forest + GridSearchCV | Dirección", fontweight="bold")
+    ax.legend()
+    ax.grid(True, alpha=0.3, axis="y")
+
+    for bar in list(bars1) + list(bars2):
+        h = bar.get_height()
+        ax.annotate(
+            f"{h:.2f}",
+            xy=(bar.get_x() + bar.get_width() / 2, h),
+            xytext=(0, 3),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _cargar_o_entrenar():
+    """Reutiliza predicciones guardadas por rf_direction_circular_test.py si existen."""
+    npz_path = _SCRIPT_DIR / "predicciones_direccion_test.npz"
+    if npz_path.exists():
+        print(f"Reutilizando predicciones: {npz_path}")
+        data = np.load(npz_path, allow_pickle=True)
+        return (
+            data["y_test"],
+            data["y_pred_antes"],
+            data["y_pred_despues"],
+            data["metricas_antes"].item(),
+            data["metricas_despues"].item(),
+        )
+
+    print("Entrenando modelos con GridSearchCV (puede tardar varios minutos)...")
+    X_train, y_train, g_train, X_test, y_test, _, _ = load_direction_train_test()
+    model_antes = entrenar_rf_direccion_directa(X_train, y_train, g_train)
+    model_despues = entrenar_rf_direccion_sincos(X_train, y_train, g_train)
+    y_pred_antes = model_antes.predict(X_test)
+    y_pred_despues = sincos_to_direction(model_despues.predict(X_test))
+    from circular_direction import metricas_circulares
+    from rf_direction_circular_test import evaluar_enfoque_directo, evaluar_enfoque_sincos
+    metricas_antes = evaluar_enfoque_directo(y_test, y_pred_antes)
+    metricas_despues, y_pred_despues = evaluar_enfoque_sincos(y_test, model_despues.predict(X_test))
+    return y_test, y_pred_antes, y_pred_despues, metricas_antes, metricas_despues
+
+
 def main():
     OUTPUT_DIR.mkdir(exist_ok=True)
 
-    print("Cargando datos reales (HURDAT2 + SHIPS + NAO)...")
-    X_train, y_train, g_train, X_test, y_test, g_test, info = load_direction_train_test()
-    print(f"  Train: {X_train.shape[0]} secuencias | Test: {X_test.shape[0]} secuencias")
-
-    print("Entrenando modelos...")
-    model_antes = entrenar_rf_direccion_directa(X_train, y_train, g_train)
-    model_despues = entrenar_rf_direccion_sincos(X_train, y_train, g_train)
-
-    y_pred_antes = model_antes.predict(X_test)
-    y_pred_despues = sincos_to_direction(model_despues.predict(X_test))
+    y_test, y_pred_antes, y_pred_despues, metricas_antes, metricas_despues = _cargar_o_entrenar()
+    print(f"  Test: {y_test.shape[0]} secuencias")
 
     # Secuencias con distinto perfil de error para ilustrar
     err_antes = np.mean(np.abs(error_angular(y_test, y_pred_antes)), axis=1)
@@ -255,6 +321,10 @@ def main():
         "05_panel_resumen.png": lambda: plot_panel_resumen(
             y_test, y_pred_antes, y_pred_despues, idx_mejor_despues,
             OUTPUT_DIR / "05_panel_resumen.png",
+        ),
+        "06_metricas_comparativas.png": lambda: plot_metricas_comparativas(
+            metricas_antes, metricas_despues,
+            OUTPUT_DIR / "06_metricas_comparativas.png",
         ),
     }
 

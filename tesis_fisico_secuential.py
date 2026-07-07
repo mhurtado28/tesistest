@@ -78,7 +78,7 @@ from geopy.distance import geodesic
 # In[355]:
 
 
-df = pd.read_csv('hurdat2-1851-2023-051124.txt', sep= ',', names=['Date', 'Hour','RecIdentifier','type_storm','Latitude',
+df = pd.read_csv(_SCRIPT_DIR / 'hurdat2-1851-2023-051124.txt', sep= ',', names=['Date', 'Hour','RecIdentifier','type_storm','Latitude',
                                                               'Longitude','Max_wind','MinPress','NE34','SE34','SW34','NW34',
                                                               'NE50','SE50','SW50','NW50','NE64','SE64','SW64','NW64','Rad_Max_Wind'])
 
@@ -892,7 +892,7 @@ df_EDA
 
 #df_ships = pd.read_csv("/Users/mauriciohurtado/modelo_clasificacion/datos_ships/datos_ships.csv")
 
-df_ships = pd.read_csv("/Users/mauriciohurtado/modelsTesis/real_tesis/datos/ships_filter.csv", sep= ';')
+df_ships = pd.read_csv(_SCRIPT_DIR / "ships_filter.csv", sep=';')
 
 
 # In[406]:
@@ -1039,7 +1039,7 @@ import pandas as pd
 
 # Saltar título (línea 1) y fila "Jan Feb ... Dec" (línea 2); leer solo números
 df_nao = pd.read_csv(
-    "norm_nao_monthly_b5001_current_ascii.txt",
+    _SCRIPT_DIR / "norm_nao_monthly_b5001_current_ascii.txt",
     sep=r"\s+",
     skiprows=2,
     header=None,

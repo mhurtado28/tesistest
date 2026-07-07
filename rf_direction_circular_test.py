@@ -14,7 +14,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import joblib
+from dataset_loader import load_direction_train_test
 import numpy as np
 import pandas as pd
 from sklearn.compose import TransformedTargetRegressor
@@ -232,18 +232,17 @@ def demostrar_error_angular():
 def main():
     print("=" * 70)
     print("Random Forest — Comparación dirección directa vs sin/cos (circular)")
+    print("Datos: HURDAT2 + SHIPS + NAO")
     print("=" * 70)
 
     demostrar_error_angular()
 
-    print("\nDatos: mismas secuencias sintéticas (random_state=42) para ambos enfoques.")
-    X_dir, y_dir, grupos = create_sequences_synthetic(random_state=42)
-
-    X_train, y_train, g_train, X_test, y_test, _ = split_by_storm(
-        flatten_sequences(X_dir), y_dir, grupos
-    )
+    print("\nCargando y preparando datos reales...")
+    X_train, y_train, g_train, X_test, y_test, g_test, info = load_direction_train_test()
+    print(f"  Filas EDA (con SHIPS): {info['n_rows_eda']}")
+    print(f"  Tormentas train/test: {info['n_storms_train']} / {info['n_storms_test']}")
     print(f"\nTrain: {X_train.shape[0]} secuencias | Test: {X_test.shape[0]} secuencias")
-    print(f"Horizonte: {y_train.shape[1]} pasos | Features aplanadas: {X_train.shape[1]}")
+    print(f"Horizonte: {info['horizon']} pasos | Features aplanadas: {X_train.shape[1]}")
 
     print("\n[1/2] Entrenando RF — ANTES (vec_direction estandarizado, predicción directa)...")
     model_directo = entrenar_rf_direccion_directa(X_train, y_train, g_train)

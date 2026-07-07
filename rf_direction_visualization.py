@@ -11,19 +11,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.gridspec import GridSpec
 
-from circular_direction import error_angular, sincos_to_direction
+from circular_direction import error_angular, metricas_circulares, sincos_to_direction
+from dataset_loader import load_direction_train_test
 from rf_direction_circular_test import (
-    create_sequences_synthetic,
     entrenar_rf_direccion_directa,
     entrenar_rf_direccion_sincos,
-    flatten_sequences,
-    metricas_circulares,
-    split_by_storm,
 )
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = _SCRIPT_DIR / "plots_direccion"
-RANDOM_STATE = 42
 
 
 def _unwrap_angles(angles: np.ndarray) -> np.ndarray:
@@ -219,11 +215,9 @@ def plot_panel_resumen(
 def main():
     OUTPUT_DIR.mkdir(exist_ok=True)
 
-    print("Generando datos sintéticos (random_state=42)...")
-    X_dir, y_dir, grupos = create_sequences_synthetic(random_state=RANDOM_STATE)
-    X_train, y_train, g_train, X_test, y_test, _ = split_by_storm(
-        flatten_sequences(X_dir), y_dir, grupos
-    )
+    print("Cargando datos reales (HURDAT2 + SHIPS + NAO)...")
+    X_train, y_train, g_train, X_test, y_test, g_test, info = load_direction_train_test()
+    print(f"  Train: {X_train.shape[0]} secuencias | Test: {X_test.shape[0]} secuencias")
 
     print("Entrenando modelos...")
     model_antes = entrenar_rf_direccion_directa(X_train, y_train, g_train)

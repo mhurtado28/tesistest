@@ -1,0 +1,75 @@
+[2026-08-29 02:59:13 UTC] leyendo /workspaces/tesistest/tesis_eda_v11.ipynb
+[2026-08-29 02:59:13 UTC] 165 celdas (89 de código)
+[2026-08-29 02:59:13 UTC] kernel listo; ejecutando celdas…
+[2026-08-29 02:59:13 UTC] celda 4 (1/89): import matplotlib
+[2026-08-29 02:59:15 UTC] celda 6 (2/89): df = pd.read_csv('datos/hurdat2-1851-2023-051124.txt', sep= ',', names=['Date', 'Hour','Re
+[2026-08-29 02:59:15 UTC] celda 7 (3/89): # Agregar nuevas columnas para almacenar los valores extraídos
+[2026-08-29 02:59:17 UTC] celda 9 (4/89): # Eliminar la columna 'Rad_Max_Wind'
+[2026-08-29 02:59:17 UTC] celda 10 (5/89): df_ETL = df_procesado
+[2026-08-29 02:59:18 UTC] celda 13 (6/89): def clasificacion_huracan(df):
+[2026-08-29 02:59:18 UTC] celda 14 (7/89): # Reemplazar 'HU' en 'type_storm' por el valor de 'categoria_huracan' de la misma fila
+[2026-08-29 02:59:18 UTC] celda 16 (8/89): df_ETL = df_ETL.drop([25198, 25199])
+[2026-08-29 02:59:18 UTC] celda 18 (9/89): # Mapeo manual
+[2026-08-29 02:59:18 UTC] celda 21 (10/89): import matplotlib.pyplot as plt
+[2026-08-29 02:59:18 UTC] celda 23 (11/89): df_ETL.isnull().sum()
+[2026-08-29 02:59:18 UTC] celda 24 (12/89): def figura_faltantes(d):
+[2026-08-29 02:59:18 UTC] celda 27 (13/89): def find_negative_wind_radii(df):
+[2026-08-29 02:59:18 UTC] celda 28 (14/89): C34, C50, C64 = "#9CC7E6", "#3C8CC4", "#0A4E85"
+[2026-08-29 02:59:19 UTC] celda 30 (15/89): #Guardamos una copia de seguridad
+[2026-08-29 02:59:19 UTC] celda 32 (16/89): OPER = ["TD", "TS", "Cat 1", "Cat 2", "Cat 3", "Cat 4", "Cat 5"]
+[2026-08-29 02:59:19 UTC] celda 35 (17/89): # Ruta del fichero de SHIPS: la misma que se usa más adelante al unirlo
+[2026-08-29 02:59:19 UTC] celda 38 (18/89): # Ruta del fichero de la NAO: la misma que se usa más adelante al unirlo
+[2026-08-29 02:59:19 UTC] celda 42 (19/89): # ══════════════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:19 UTC] celda 44 (20/89): # Ver valores faltantes antes de imputar
+[2026-08-29 02:59:19 UTC] celda 46 (21/89): df_EDA["Lon_W"] = -df_EDA["Lon_W"]
+[2026-08-29 02:59:19 UTC] celda 48 (22/89): # Crear columnas para vectores
+[2026-08-29 02:59:23 UTC] celda 50 (23/89): df_EDA["vec_len"] = np.sqrt((df_EDA["vec_x"]**2)+(df_EDA["vec_y"]**2))
+[2026-08-29 02:59:23 UTC] celda 52 (24/89): # Ver cuántos se eliminarán
+[2026-08-29 02:59:23 UTC] celda 53 (25/89): # Histograma de valores mayores a 5.5
+[2026-08-29 02:59:23 UTC] celda 56 (26/89): def calculate_direction(vec_x, vec_y):
+[2026-08-29 02:59:23 UTC] celda 57 (27/89): # Histograma de vec_direction
+[2026-08-29 02:59:23 UTC] celda 60 (28/89): #df_ships = pd.read_csv("/Users/mauriciohurtado/modelo_clasificacion/datos_ships/datos_shi
+[2026-08-29 02:59:23 UTC] celda 61 (29/89): print("Columnas numéricas:")
+[2026-08-29 02:59:23 UTC] celda 62 (30/89): print("Columnas numéricas:")
+[2026-08-29 02:59:23 UTC] celda 63 (31/89): # filtrar el df_ships con las columnas a usar
+[2026-08-29 02:59:23 UTC] celda 64 (32/89): print("Columnas numéricas:")
+[2026-08-29 02:59:23 UTC] celda 65 (33/89): # ===============================
+[2026-08-29 02:59:23 UTC] celda 66 (34/89): df_EDA = df_combinado.copy()
+[2026-08-29 02:59:23 UTC] celda 67 (35/89): df_EDA.head(3)
+[2026-08-29 02:59:23 UTC] celda 69 (36/89): # ══════════════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:23 UTC] celda 71 (37/89): import pandas as pd
+[2026-08-29 02:59:23 UTC] celda 72 (38/89): df_EDA
+[2026-08-29 02:59:23 UTC] celda 75 (39/89): # ══════════════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:23 UTC] celda 77 (40/89): from statsmodels.stats.outliers_influence import variance_inflation_factor
+[2026-08-29 02:59:24 UTC] celda 79 (41/89): CONSERVADAS_A, ELIMINADAS_A = diagnosticar(
+[2026-08-29 02:59:24 UTC] celda 82 (42/89): CONSERVADAS_B, ELIMINADAS_B = diagnosticar(
+[2026-08-29 02:59:24 UTC] celda 85 (43/89): # ── Resumen de las dos depuraciones ─────────────────────────────────────────
+[2026-08-29 02:59:24 UTC] celda 86 (44/89): # ── Figura: correlación entre los predictores finales de cada conjunto ──────
+[2026-08-29 02:59:25 UTC] celda 88 (45/89): # ── Por qué `type_storm_n` no podía quedarse ────────────────────────────────
+[2026-08-29 02:59:25 UTC] celda 89 (46/89): # ── Colinealidad de la matriz que el modelo recibe realmente ────────────────
+[2026-08-29 02:59:26 UTC] celda 92 (47/89): # ══════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:27 UTC] celda 93 (48/89): def figura_trayectorias(d, tray, radio_km=RADIO_KM):
+[2026-08-29 02:59:27 UTC] celda 94 (49/89): # ══════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:27 UTC] celda 96 (50/89): # ══════════════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:27 UTC] celda 99 (51/89): # ══════════════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:40 UTC] celda 100 (52/89): # ── 3.4 Figura ──────────────────────────────────────────────────────────────
+[2026-08-29 02:59:40 UTC] celda 103 (53/89): from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+[2026-08-29 02:59:40 UTC] celda 104 (54/89): import matplotlib.pyplot as plt
+[2026-08-29 02:59:40 UTC] celda 105 (55/89): def plot_residuals(y_true, y_pred, model_name="Modelo", conjunto="Test", save_path=None):
+[2026-08-29 02:59:40 UTC] celda 106 (56/89): import re
+[2026-08-29 02:59:40 UTC] celda 107 (57/89): def _final_step_pipeline(estimator):
+[2026-08-29 02:59:40 UTC] celda 108 (58/89): from typing import Any, Collection, List, Optional, Union
+[2026-08-29 02:59:40 UTC] celda 109 (59/89): def fi_promedio_todas_las_secuencias(
+[2026-08-29 02:59:40 UTC] celda 111 (60/89): df_sin_filtrar = df_combinado.copy()   # conserva también las filas sin SHIPS
+[2026-08-29 02:59:40 UTC] celda 112 (61/89): # ══════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:40 UTC] celda 114 (62/89): # ========================================
+[2026-08-29 02:59:40 UTC] celda 115 (63/89): from sklearn.pipeline import Pipeline
+[2026-08-29 02:59:40 UTC] celda 116 (64/89): # ══════════════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:47 UTC] celda 118 (65/89): # ══════════════════════════════════════════════════════════════════════════
+[2026-08-29 02:59:47 UTC] celda 120 (66/89): from sklearn.neighbors import KNeighborsRegressor
+[2026-08-29 03:09:41 UTC] celda 122 (67/89): _ = salida_modelo("KNN")
+[2026-08-29 03:09:43 UTC] celda 124 (68/89): from sklearn.tree import DecisionTreeRegressor
+[2026-08-29 03:14:34 UTC] celda 126 (69/89): _ = salida_modelo("Árbol de decisión")
+[2026-08-29 03:14:35 UTC] celda 128 (70/89): importancias_modelo("Árbol de decisión")
+[2026-08-29 03:14:36 UTC] celda 130 (71/89): from sklearn.ensemble import RandomForestRegressor
+[2026-08-29 14:16:05 UTC] guardado /workspaces/tesistest/tesis_eda_v11_executed.ipynb (0.34 MB)
